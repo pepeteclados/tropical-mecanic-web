@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
+
+
+
     <script>
         tailwind.config = {
             theme: {
@@ -47,6 +50,11 @@
         .fa-brands, .fab {
             font-family: 'Font Awesome 6 Brands' !important;
             font-weight: 400 !important;
+        }
+        /* Ocultación robusta: evita que las clases flex vuelvan visibles elementos ocultos. */
+        #btn-mi-suscripcion.hidden,
+        #subscription-actions.hidden {
+            display: none !important;
         }
         body {
             background-color: #ffb6c1;
@@ -95,7 +103,7 @@
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
             
             <!-- LOGO ORIGINAL RESTAURADO (Clic para Resetear) -->
-            <div class="cursor-pointer group py-1" onclick="resetToHome()">
+            <div class="group py-1" aria-label="Tropical Mecánico">
                 <div class="relative inline-block px-4 py-1">
                     <!-- Destello Estrella Amarillo Neón -->
                     <svg class="w-44 h-14 text-tm-yellow absolute -inset-1 transform group-hover:scale-105 transition" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -111,18 +119,18 @@
 
             <!-- Menú Navegación -->
             <nav class="flex flex-wrap items-center gap-2 md:gap-4 font-bold text-tm-purple text-xs md:text-sm">
-                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Curaduría FAN</button>
-                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Biblioteca digital</button>
-                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Publicaciones</button>
+                <button type="button" class="px-2 py-1 cursor-pointer transition-colors duration-200 hover:text-tm-pink-dark hover:underline underline-offset-4 focus-visible:text-tm-pink-dark focus-visible:underline" aria-disabled="true">Curaduría FAN</button>
+                <button type="button" class="px-2 py-1 cursor-pointer transition-colors duration-200 hover:text-tm-pink-dark hover:underline underline-offset-4 focus-visible:text-tm-pink-dark focus-visible:underline" aria-disabled="true">Biblioteca digital</button>
+                <button type="button" class="px-2 py-1 cursor-pointer transition-colors duration-200 hover:text-tm-pink-dark hover:underline underline-offset-4 focus-visible:text-tm-pink-dark focus-visible:underline" aria-disabled="true">Publicaciones</button>
                 
                 <!-- Botón Recibí la revista -->
-                <button onclick="switchTab('subscribe-view')" class="bg-tm-pink hover:bg-tm-pink-dark text-tm-purple hover:text-white border-2 border-tm-purple px-3 py-1.5 rounded-full font-black uppercase transition transform hover:scale-105 shadow flex items-center gap-1.5">
+                <button id="btn-recibi-revista" onclick="switchTab('subscribe-view')" class="bg-tm-pink hover:bg-tm-pink-dark text-tm-purple hover:text-white border-2 border-tm-purple px-3 py-1.5 rounded-full font-black uppercase transition transform hover:scale-105 shadow flex items-center gap-1.5">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                     <span>Recibí la revista</span>
                 </button>
 
                 <!-- Botón Mi Suscripción / Perfil -->
-                <button onclick="switchTab('profile-view')" class="bg-tm-yellow hover:bg-yellow-300 text-tm-purple border-2 border-tm-purple px-3 py-1.5 rounded-full font-black transition shadow flex items-center gap-1.5">
+                <button id="btn-mi-suscripcion" onclick="switchTab('profile-view')" class="hidden bg-tm-yellow text-tm-purple border-2 border-tm-purple px-3 py-1.5 rounded-full font-black transition shadow flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled title="Completá primero el formulario ‘Recibí la revista’">
                     <i class="fa-solid fa-user"></i>
                     <span>Mi Suscripción</span>
                 </button>
@@ -307,6 +315,9 @@
                         </span>
                         <h2 class="text-2xl font-black text-tm-purple mt-1" id="profile-user-name">Hola, Lucía Pineda</h2>
                         <p class="text-xs font-bold text-tm-purple" id="profile-address-display">Dirección de entrega: Av. Corrientes 2450, CABA</p>
+                        <button type="button" onclick="editDeliveryAddress()" class="mt-2 inline-flex items-center rounded-full border-2 border-tm-purple bg-white px-3 py-1.5 text-xs font-black text-tm-purple hover:bg-tm-pink transition">
+                            <i class="fa-solid fa-pen-to-square mr-1"></i>Modificar dirección de entrega
+                        </button>
                     </div>
                     <div class="bg-white border-2 border-tm-purple px-4 py-2 rounded-xl text-center">
                         <span class="text-[10px] uppercase font-black text-slate-500 block">Cuota Mensual</span>
@@ -419,7 +430,55 @@
 
             </div>
 
+            <!-- Acciones exclusivas de Mi Suscripción -->
+            <footer id="subscription-actions" class="hidden mt-8 bg-tm-purple border-t-4 border-tm-lime rounded-2xl px-4 py-5 text-tm-lime">
+                <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm font-bold">
+                    <span class="text-xs uppercase tracking-wider text-tm-lime/80">Tu suscripción</span>
+                    <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+                        <button type="button" onclick="cancelSubscription()" class="rounded-full border-2 border-tm-pink px-4 py-2 text-tm-pink hover:bg-tm-pink hover:text-tm-purple transition">
+                            <i class="fa-solid fa-circle-xmark mr-1"></i>Cancelar suscripción
+                        </button>
+                        <button type="button" onclick="shareSubscriptionLink()" class="rounded-full border-2 border-tm-lime px-4 py-2 text-tm-lime hover:bg-tm-lime hover:text-tm-purple transition">
+                            <i class="fa-solid fa-share-nodes mr-1"></i>Compartir suscripción con amigos
+                        </button>
+                    </div>
+                </div>
+                <p id="share-feedback" class="hidden max-w-7xl mx-auto mt-3 text-center text-xs text-white" role="status"></p>
+            </footer>
+
         </section>
+
+        <!-- Modal para modificar modalidad y dirección de entrega -->
+        <div id="delivery-edit-modal" class="fixed inset-0 bg-tm-purple/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+            <div class="bg-white border-4 border-tm-purple rounded-3xl p-6 max-w-md w-full neon-shadow space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-lg font-black text-tm-purple">Modificar entrega</h3>
+                    <button type="button" onclick="closeDeliveryEditModal()" class="text-tm-purple font-black text-xl" aria-label="Cerrar">✕</button>
+                </div>
+                <label class="block text-xs font-bold text-tm-purple uppercase">¿Cómo querés recibir la revista?</label>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 rounded-xl border-2 border-tm-purple p-3 text-sm font-bold"><input type="radio" name="editDeliveryOption" value="domicilio" onchange="toggleEditDeliveryFields()"> En mi domicilio</label>
+                    <label class="flex items-center gap-2 rounded-xl border-2 border-tm-purple p-3 text-sm font-bold"><input type="radio" name="editDeliveryOption" value="retiro" onchange="toggleEditDeliveryFields()"> En un punto de retiro</label>
+                </div>
+                <div id="edit-address-container" class="hidden">
+                    <label for="edit-delivery-address" class="block text-xs font-bold text-tm-purple uppercase mb-1">Dirección de entrega</label>
+                    <input id="edit-delivery-address" type="text" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-sm" placeholder="Calle, número, localidad">
+                </div>
+                <div id="edit-pickup-container" class="hidden">
+                    <label for="edit-pickup-point" class="block text-xs font-bold text-tm-purple uppercase mb-1">Punto de retiro</label>
+                    <select id="edit-pickup-point" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-sm bg-white">
+                        <option value="Galería Casa Brandon (Almagro)">Galería Casa Brandon (Almagro - CABA)</option>
+                        <option value="Centro Cultural Recoleta (Recoleta)">Centro Cultural Recoleta (Recoleta - CABA)</option>
+                        <option value="Espacio Cultural Quilmes Centro">Espacio Cultural Quilmes Centro (Quilmes)</option>
+                    </select>
+                </div>
+                <p id="edit-delivery-error" class="hidden text-sm font-bold text-red-700" role="alert">Completá la dirección o elegí un punto de retiro.</p>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeDeliveryEditModal()" class="rounded-full border-2 border-tm-purple px-4 py-2 text-sm font-bold">Cancelar</button>
+                    <button type="button" onclick="saveDeliveryChanges()" class="rounded-full border-2 border-tm-purple bg-tm-lime px-4 py-2 text-sm font-black">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
 
         <!-- MODAL CHECKOUT COMPRA FANZINE -->
         <div id="fanzine-modal" class="fixed inset-0 bg-tm-purple/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
@@ -659,6 +718,9 @@
             }
         ];
 
+        // Mi Suscripción permanece bloqueada hasta completar el formulario de alta.
+        let subscriptionCompleted = false;
+
         let currentActiveUser = {
             name: 'Lucía Pineda',
             email: 'lucia@ejemplo.com',
@@ -687,11 +749,17 @@
             updateStats();
         };
 
+        // Secciones informativas sin navegación por ahora.
         function resetToHome() {
-            switchTab('subscribe-view');
+            return;
         }
 
         function switchTab(viewId) {
+            // No permitir abrir Mi Suscripción antes de completar “Recibí la revista”.
+            if (viewId === 'profile-view' && !subscriptionCompleted) {
+                return;
+            }
+
             const views = ['subscribe-view', 'profile-view', 'team-view'];
             views.forEach(v => {
                 const el = document.getElementById(v);
@@ -788,12 +856,139 @@
 
             subscribers.unshift(newSub);
 
+            // Una vez suscripta la persona, ocultar el alta y mostrar solo Mi Suscripción.
+            subscriptionCompleted = true;
+            const subscribeButton = document.getElementById('btn-recibi-revista');
+            if (subscribeButton) subscribeButton.classList.add('hidden');
+            const subscriptionActions = document.getElementById('subscription-actions');
+            if (subscriptionActions) subscriptionActions.classList.remove('hidden');
+            const profileButton = document.getElementById('btn-mi-suscripcion');
+            if (profileButton) {
+                profileButton.classList.remove('hidden');
+                profileButton.disabled = false;
+                profileButton.title = 'Abrir Mi Suscripción';
+                profileButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                profileButton.classList.add('hover:bg-yellow-300');
+            }
+
             document.getElementById('profile-user-name').innerText = `Hola, ${name}`;
             document.getElementById('profile-address-display').innerText = `Dirección de entrega: ${addressText}`;
 
             renderTables();
             updateStats();
             switchTab('profile-view');
+        }
+
+        function editDeliveryAddress() {
+            if (!subscriptionCompleted || !currentActiveUser) return;
+            const modal = document.getElementById('delivery-edit-modal');
+            const selectedType = document.querySelector(`input[name="editDeliveryOption"][value="${currentActiveUser.type}"]`);
+            if (selectedType) selectedType.checked = true;
+            document.getElementById('edit-delivery-address').value = currentActiveUser.type === 'domicilio' ? (currentActiveUser.address || '') : '';
+            const pickup = document.getElementById('edit-pickup-point');
+            if ([...pickup.options].some(option => option.value === currentActiveUser.address)) pickup.value = currentActiveUser.address;
+            toggleEditDeliveryFields();
+            document.getElementById('edit-delivery-error').classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDeliveryEditModal() {
+            const modal = document.getElementById('delivery-edit-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleEditDeliveryFields() {
+            const type = document.querySelector('input[name="editDeliveryOption"]:checked')?.value;
+            document.getElementById('edit-address-container').classList.toggle('hidden', type !== 'domicilio');
+            document.getElementById('edit-pickup-container').classList.toggle('hidden', type !== 'retiro');
+            document.getElementById('edit-delivery-error').classList.add('hidden');
+        }
+
+        function saveDeliveryChanges() {
+            if (!subscriptionCompleted || !currentActiveUser) return;
+            const type = document.querySelector('input[name="editDeliveryOption"]:checked')?.value;
+            const address = type === 'domicilio' ? document.getElementById('edit-delivery-address').value.trim() : document.getElementById('edit-pickup-point').value;
+            if (!type || !address) {
+                document.getElementById('edit-delivery-error').classList.remove('hidden');
+                return;
+            }
+            currentActiveUser.type = type;
+            currentActiveUser.address = address;
+            document.getElementById('profile-address-display').innerText = `${type === 'retiro' ? 'Punto de retiro' : 'Dirección de entrega'}: ${address}`;
+            const ownSub = subscribers.find(s => s.email === currentActiveUser.email);
+            if (ownSub) {
+                ownSub.type = type;
+                ownSub.address = address;
+            }
+            // Mantener el formulario de alta sincronizado con los datos actuales.
+            const homeRadio = document.querySelector('input[name="deliveryOption"][value="domicilio"]');
+            const pickupRadio = document.querySelector('input[name="deliveryOption"][value="retiro"]');
+            if (homeRadio) homeRadio.checked = type === 'domicilio';
+            if (pickupRadio) pickupRadio.checked = type === 'retiro';
+            const subAddress = document.getElementById('sub-address');
+            const subPickup = document.getElementById('sub-pickup-point');
+            if (type === 'domicilio' && subAddress) subAddress.value = address;
+            if (type === 'retiro' && subPickup) subPickup.value = address;
+            if (typeof toggleDeliveryMode === 'function') toggleDeliveryMode(type);
+            renderTables();
+            updateStats();
+            closeDeliveryEditModal();
+        }
+
+        function cancelSubscription() {
+            const confirmed = window.confirm('¿Querés cancelar tu suscripción? Podrás volver a suscribirte después.');
+            if (!confirmed) return;
+
+            subscriptionCompleted = false;
+            const subscribeButton = document.getElementById('btn-recibi-revista');
+            if (subscribeButton) subscribeButton.classList.remove('hidden');
+
+            const profileButton = document.getElementById('btn-mi-suscripcion');
+            if (profileButton) {
+                profileButton.classList.add('hidden');
+                profileButton.disabled = true;
+                profileButton.title = 'Completá primero el formulario “Recibí la revista”';
+                profileButton.classList.add('opacity-50', 'cursor-not-allowed');
+                profileButton.classList.remove('hover:bg-yellow-300');
+            }
+
+            const actions = document.getElementById('subscription-actions');
+            if (actions) actions.classList.add('hidden');
+
+            const feedback = document.getElementById('share-feedback');
+            if (feedback) feedback.classList.add('hidden');
+
+            goToStep1();
+            switchTab('subscribe-view');
+        }
+
+        async function shareSubscriptionLink() {
+            const link = window.location.href;
+            const feedback = document.getElementById('share-feedback');
+            try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: 'Suscribite a Revista Tropicalísima',
+                        text: '¡Sumate a la suscripción de Revista Tropicalísima!',
+                        url: link
+                    });
+                } else if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(link);
+                    if (feedback) {
+                        feedback.textContent = '¡Link copiado! Ya podés compartirlo con tus amigos.';
+                        feedback.classList.remove('hidden');
+                    }
+                } else {
+                    window.prompt('Copiá este link para compartir la suscripción:', link);
+                }
+            } catch (error) {
+                if (error && error.name !== 'AbortError' && feedback) {
+                    feedback.textContent = 'No se pudo abrir la opción de compartir. Podés copiar el enlace desde la barra del navegador.';
+                    feedback.classList.remove('hidden');
+                }
+            }
         }
 
         // FANZINES CHECKOUT Y ESTADO CON CANCELACIÓN
@@ -1072,5 +1267,7 @@
             });
         }
     </script>
+
+
 </body>
 </html>
