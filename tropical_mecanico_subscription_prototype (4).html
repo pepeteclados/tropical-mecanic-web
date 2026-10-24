@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tropical Mecánico — Revista Tropicalísima</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'tm-lime': '#ccff00',
+                        'tm-pink': '#ff66cc',
+                        'tm-pink-dark': '#ff007f',
+                        'tm-pink-light': '#ffb6c1',
+                        'tm-purple': '#4a0e4e',
+                        'tm-yellow': '#ffff00',
+                    },
+                    fontFamily: {
+                        'comic': ['"Comic Sans MS"', '"Comic Sans"', 'cursive', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif !important;
+        }
+        body {
+            background-color: #ffb6c1;
+        }
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #ff66cc;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccff00;
+            border: 2px solid #4a0e4e;
+        }
+        .neon-shadow {
+            box-shadow: 5px 5px 0px #4a0e4e;
+        }
+        
+        #map-container {
+            width: 100%;
+            height: 380px;
+            position: relative;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            border: 3px solid #4a0e4e;
+            border-radius: 16px;
+            z-index: 10;
+        }
+
+        /* Fanzines Flotantes */
+        .fanzine-card {
+            transform: rotate(-3deg);
+            transition: all 0.3s ease;
+        }
+        .fanzine-card:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-900 bg-gradient-to-b from-pink-300 via-pink-200 to-pink-300 selection:bg-tm-lime selection:text-tm-purple">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="sticky top-0 z-50 bg-tm-lime border-b-4 border-tm-purple px-4 py-2 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            
+            <!-- LOGO ORIGINAL RESTAURADO (Clic para Resetear) -->
+            <div class="cursor-pointer group py-1" onclick="resetToHome()">
+                <div class="relative inline-block px-4 py-1">
+                    <!-- Destello Estrella Amarillo Neón -->
+                    <svg class="w-44 h-14 text-tm-yellow absolute -inset-1 transform group-hover:scale-105 transition" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <polygon points="50,0 63,35 100,50 63,65 50,100 37,65 0,50 37,35" fill="#ffff00" stroke="#4a0e4e" stroke-width="4"/>
+                    </svg>
+                    <!-- Texto Logo -->
+                    <div class="relative z-10 font-black italic tracking-tight leading-none text-center">
+                        <span class="text-2xl md:text-3xl text-tm-pink-dark drop-shadow-sm block">Tropical</span>
+                        <span class="text-xl md:text-2xl text-tm-purple -mt-1 block">Mecánico</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menú Navegación -->
+            <nav class="flex flex-wrap items-center gap-2 md:gap-4 font-bold text-tm-purple text-xs md:text-sm">
+                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Curaduría FAN</button>
+                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Biblioteca digital</button>
+                <button onclick="resetToHome()" class="hover:underline hover:text-tm-pink-dark transition px-2 py-1">Publicaciones</button>
+                
+                <!-- Botón Recibí la revista -->
+                <button onclick="switchTab('subscribe-view')" class="bg-tm-pink hover:bg-tm-pink-dark text-tm-purple hover:text-white border-2 border-tm-purple px-3 py-1.5 rounded-full font-black uppercase transition transform hover:scale-105 shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                    <span>Recibí la revista</span>
+                </button>
+
+                <!-- Botón Mi Suscripción / Perfil -->
+                <button onclick="switchTab('profile-view')" class="bg-tm-yellow hover:bg-yellow-300 text-tm-purple border-2 border-tm-purple px-3 py-1.5 rounded-full font-black transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Mi Suscripción</span>
+                </button>
+
+                <!-- Toggle Panel Equipo TM -->
+                <button onclick="switchTab('team-view')" class="bg-tm-purple text-tm-lime hover:bg-black border-2 border-tm-purple px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow ml-2">
+                    <i class="fa-solid fa-user-gear text-tm-pink"></i>
+                    <span>Panel TM</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- BANNER SUBHEADER -->
+    <div class="bg-tm-purple text-tm-lime px-4 py-1.5 text-center text-xs border-b-2 border-tm-lime flex justify-center items-center gap-2">
+        <span id="view-mode-badge" class="inline-block w-2.5 h-2.5 rounded-full bg-tm-lime animate-pulse"></span>
+        <span id="view-mode-text" class="font-bold">Revista Tropicalísima — Suscripción Mensual Autogestiva</span>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
+
+        <!-- ========================================== -->
+        <!-- 1. VISTA COMBINADA: RECIBÍ LA REVISTA      -->
+        <!-- ========================================== -->
+        <section id="subscribe-view" class="space-y-8">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- COSTADO IZQUIERDO: TARJETA ESTÉTICA -->
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="bg-tm-pink border-4 border-tm-purple p-4 rounded-3xl neon-shadow text-center transform -rotate-2">
+                        <span class="bg-tm-yellow border-2 border-tm-purple px-2 py-0.5 rounded font-black text-[10px] text-tm-purple uppercase block mb-2">
+                            Edición Octubre 2026
+                        </span>
+                        <div class="bg-white border-2 border-tm-purple p-3 rounded-2xl mb-2">
+                            <div class="border-2 border-dashed border-tm-purple p-4 bg-pink-50 flex flex-col items-center justify-center min-h-[160px]">
+                                <i class="fa-solid fa-book-open text-4xl text-tm-pink-dark mb-2"></i>
+                                <span class="text-xs font-black text-tm-purple">TROPICALÍSIMA</span>
+                                <span class="text-[10px] font-bold text-slate-600 italic">"Una revista que sirve para todo"</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-bold text-tm-purple">Muestras curatoriales, fotos, poesías y fanzines.</p>
+                    </div>
+                </div>
+
+                <!-- CENTRO: SUSCRIPCIÓN Y FORMULARIO (2 PASOS) -->
+                <div class="lg:col-span-6 bg-white border-4 border-tm-purple rounded-3xl p-6 md:p-8 neon-shadow space-y-6">
+                    
+                    <!-- PASO 1: DETALLE DE SUSCRIPCIÓN -->
+                    <div id="step-1-container" class="space-y-5 text-center">
+                        <span class="bg-tm-pink text-tm-purple font-black text-xs uppercase px-3 py-1 rounded-full border-2 border-tm-purple inline-block">
+                            Suscripción Directa
+                        </span>
+                        
+                        <h2 class="text-2xl md:text-3xl font-black text-tm-purple">Suscripción Mensual Tropicalísima</h2>
+                        
+                        <div class="bg-tm-pink-light border-3 border-tm-purple p-5 rounded-2xl space-y-3">
+                            <div class="bg-tm-yellow border-2 border-tm-purple py-2 px-4 rounded-xl inline-block shadow">
+                                <span class="text-3xl font-black text-tm-purple">$6.000 ARS / mes</span>
+                            </div>
+                            
+                            <ul class="text-left space-y-2 text-tm-purple text-xs md:text-sm font-bold border-t-2 border-tm-purple/20 pt-3">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-asterisk text-tm-pink-dark"></i> Recibí tu revista física todos los meses.</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-asterisk text-tm-pink-dark"></i> Envío a domicilio o retiro en punto cultural.</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-asterisk text-tm-pink-dark"></i> Podes sumar fanzines adicionales en tu entrega.</li>
+                            </ul>
+                        </div>
+
+                        <button onclick="goToStep2()" class="w-full bg-tm-lime hover:bg-yellow-300 text-tm-purple font-black text-base py-3.5 rounded-xl border-3 border-tm-purple neon-shadow transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <span>COMPLETAR DATOS Y SUSCRIBIRME</span> <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- PASO 2: FORMULARIO DE REGISTRO CON CAMPOS SOLICITADOS -->
+                    <div id="step-2-container" class="hidden space-y-5">
+                        <div class="flex justify-between items-center border-b-2 border-tm-pink pb-2">
+                            <button onclick="goToStep1()" class="text-xs font-bold text-tm-purple bg-pink-100 border-2 border-tm-purple px-2.5 py-1 rounded-lg hover:bg-white transition">
+                                ← Volver
+                            </button>
+                            <span class="bg-tm-pink text-tm-purple font-black text-xs uppercase px-2.5 py-1 rounded-full border-2 border-tm-purple">
+                                Paso 2 de 2
+                            </span>
+                        </div>
+
+                        <form id="subscription-form" onsubmit="handleSubscribeSubmit(event)" class="space-y-4">
+                            <h3 class="text-lg font-black text-tm-purple">Tus datos para el envío</h3>
+
+                            <div>
+                                <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Nombre Completo *</label>
+                                <input type="text" id="sub-name" required placeholder="Ej: Lucía Pineda" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Correo Electrónico *</label>
+                                    <input type="email" id="sub-email" required placeholder="lucia@ejemplo.com" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Teléfono / WhatsApp *</label>
+                                    <input type="tel" id="sub-phone" required placeholder="11 2345-6789" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Instagram <span class="text-[10px] text-slate-500 font-normal">(Opcional)</span></label>
+                                <input type="text" id="sub-instagram" placeholder="@lucia_pineda" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold">
+                            </div>
+
+                            <!-- Tipo de Entrega -->
+                            <div class="space-y-1 pt-1">
+                                <label class="block text-xs font-bold text-tm-purple uppercase">Modo de Entrega *</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="border-2 border-tm-purple rounded-xl p-2 bg-pink-50 cursor-pointer flex items-center gap-2 font-bold text-xs">
+                                        <input type="radio" name="deliveryOption" value="domicilio" checked onchange="toggleDeliveryMode(this.value)" class="accent-tm-pink-dark">
+                                        <span>Domicilio</span>
+                                    </label>
+                                    <label class="border-2 border-tm-purple rounded-xl p-2 bg-pink-50 cursor-pointer flex items-center gap-2 font-bold text-xs">
+                                        <input type="radio" name="deliveryOption" value="retiro" onchange="toggleDeliveryMode(this.value)" class="accent-tm-pink-dark">
+                                        <span>Punto Retiro</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="address-field-container">
+                                <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Dirección exacta *</label>
+                                <input type="text" id="sub-address" required placeholder="Ej: Av. Corrientes 2450, CABA" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold">
+                            </div>
+
+                            <div id="pickup-field-container" class="hidden">
+                                <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Punto de Retiro *</label>
+                                <select id="sub-pickup-point" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold bg-white">
+                                    <option value="Galería Casa Brandon (Almagro)">Galería Casa Brandon (Almagro - CABA)</option>
+                                    <option value="Centro Cultural Recoleta (Recoleta)">Centro Cultural Recoleta (Recoleta - CABA)</option>
+                                    <option value="Espacio Cultural Quilmes Centro">Espacio Cultural Quilmes Centro (Quilmes)</option>
+                                </select>
+                            </div>
+
+                            <!-- Modalidad Pago -->
+                            <div>
+                                <label class="block text-xs font-bold text-tm-purple uppercase mb-1">Forma de Pago ($6.000/mes) *</label>
+                                <select id="sub-payment-method" class="w-full px-3 py-2 rounded-xl border-2 border-tm-purple text-xs font-bold bg-white">
+                                    <option value="MercadoPago">Débito automático MercadoPago</option>
+                                    <option value="Transferencia">Transferencia bancaria / Efectivo</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="w-full bg-tm-lime hover:bg-yellow-300 text-tm-purple font-black text-sm py-3 rounded-xl border-2 border-tm-purple shadow transition">
+                                CONFIRMAR SUSCRIPCIÓN
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- COSTADO DERECHO: EDICIONES ANTERIORES -->
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="bg-tm-yellow border-3 border-tm-purple p-4 rounded-3xl neon-shadow text-center transform rotate-2 space-y-2">
+                        <span class="text-xs font-black text-tm-purple block">EDICIONES ANTERIORES</span>
+                        <div class="bg-white border-2 border-tm-purple p-2 rounded-xl text-left space-y-1 text-[11px] font-bold text-tm-purple">
+                            <p>• Agosto 2026: Fanzines colectivos</p>
+                            <p>• Julio 2026: Recortes y poemas</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. VISTA "MI SUSCRIPCIÓN" (PERFIL Y FANZINES) -->
+        <!-- ========================================== -->
+        <section id="profile-view" class="hidden space-y-6">
+            
+            <div class="bg-white border-4 border-tm-purple rounded-3xl p-6 md:p-8 neon-shadow space-y-6">
+                
+                <div class="bg-tm-lime border-3 border-tm-purple p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <span class="bg-tm-pink text-tm-purple font-black text-[10px] px-2 py-0.5 rounded border border-tm-purple">
+                            SUSCRIPCIÓN ACTIVA
+                        </span>
+                        <h2 class="text-2xl font-black text-tm-purple mt-1" id="profile-user-name">Hola, Lucía Pineda</h2>
+                        <p class="text-xs font-bold text-tm-purple" id="profile-address-display">Dirección de entrega: Av. Corrientes 2450, CABA</p>
+                    </div>
+                    <div class="bg-white border-2 border-tm-purple px-4 py-2 rounded-xl text-center">
+                        <span class="text-[10px] uppercase font-black text-slate-500 block">Cuota Mensual</span>
+                        <span class="text-lg font-black text-tm-purple">$6.000 ARS</span>
+                    </div>
+                </div>
+
+                <!-- Estado Revista Octubre -->
+                <div class="bg-pink-50 border-3 border-tm-purple p-5 rounded-2xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <div class="md:col-span-4 flex justify-center">
+                        <div class="bg-tm-purple text-tm-lime border-3 border-tm-lime p-5 rounded-2xl text-center w-full max-w-xs shadow-lg">
+                            <i class="fa-solid fa-spinner fa-spin text-3xl text-tm-lime mb-2"></i>
+                            <p class="font-black text-xs uppercase">Edición Octubre</p>
+                            <span class="bg-tm-pink text-tm-purple text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple inline-block mt-1">
+                                EN PRODUCCIÓN
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-8 space-y-3">
+                        <span class="text-xs font-black text-tm-pink-dark uppercase block">Próxima Entrega:</span>
+                        <h3 class="text-xl font-black text-tm-purple">Revista Tropicalísima — Edición Octubre</h3>
+                        
+                        <!-- Lista de Ítems Incluidos con opción de eliminación -->
+                        <div class="bg-white border-2 border-tm-purple p-3 rounded-xl text-xs space-y-2">
+                            <p class="font-black text-tm-purple">Tu próxima entrega incluye:</p>
+                            <div id="included-items-list" class="space-y-1 font-bold text-slate-700">
+                                <div class="flex items-center gap-1.5 text-tm-purple">
+                                    <i class="fa-solid fa-check text-xs text-green-600"></i>
+                                    <span>Revista Tropicalísima (Edición Impresa Octubre)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GALERÍA DE FANZINES ADICIONALES -->
+                <div class="space-y-4 pt-4 border-t-2 border-tm-pink">
+                    <div>
+                        <h3 class="text-xl font-black text-tm-purple flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle text-tm-pink-dark"></i> Sumar Fanzines a tu próxima entrega
+                        </h3>
+                        <p class="text-xs font-bold text-slate-600">Hacé clic en el "+" para incluir fanzines adicionales en el mismo paquete de tu revista.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                        
+                        <!-- Fanzine 1 -->
+                        <div class="fanzine-card bg-pink-100 border-3 border-tm-purple rounded-2xl p-4 relative shadow-md flex flex-col justify-between">
+                            <div>
+                                <span class="bg-tm-pink text-tm-purple text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple block w-max mb-2">FANZINE 1</span>
+                                <h4 class="font-black text-xs text-tm-purple leading-tight mb-2">La teoría de la bolsa como origen de la ficción</h4>
+                                <p class="text-[10px] text-slate-600 font-bold mb-2">Ursula K. Le Guin</p>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 border-t border-tm-purple/20">
+                                <span class="text-xs font-black text-tm-purple">$1.500 ARS</span>
+                                <button id="btn-fz-1" onclick="openFanzineCheckout('La teoría de la bolsa como origen de la ficción', 1500, 'btn-fz-1')" class="bg-tm-lime hover:bg-yellow-300 text-tm-purple w-9 h-9 rounded-full border-2 border-tm-purple font-black text-lg flex items-center justify-center shadow transition transform hover:scale-110">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fanzine 2 -->
+                        <div class="fanzine-card bg-pink-100 border-3 border-tm-purple rounded-2xl p-4 relative shadow-md flex flex-col justify-between">
+                            <div>
+                                <span class="bg-tm-lime text-tm-purple text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple block w-max mb-2">FANZINE 2</span>
+                                <h4 class="font-black text-xs text-tm-purple leading-tight mb-2">El tao del arte</h4>
+                                <p class="text-[10px] text-slate-600 font-bold mb-2">Jorge Gumier Maier</p>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 border-t border-tm-purple/20">
+                                <span class="text-xs font-black text-tm-purple">$1.800 ARS</span>
+                                <button id="btn-fz-2" onclick="openFanzineCheckout('El tao del arte', 1800, 'btn-fz-2')" class="bg-tm-lime hover:bg-yellow-300 text-tm-purple w-9 h-9 rounded-full border-2 border-tm-purple font-black text-lg flex items-center justify-center shadow transition transform hover:scale-110">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fanzine 3 -->
+                        <div class="fanzine-card bg-pink-100 border-3 border-tm-purple rounded-2xl p-4 relative shadow-md flex flex-col justify-between">
+                            <div>
+                                <span class="bg-tm-yellow text-tm-purple text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple block w-max mb-2">FANZINE 3</span>
+                                <h4 class="font-black text-xs text-tm-purple leading-tight mb-2">Selección de artículos de revista Ramona 2000's</h4>
+                                <p class="text-[10px] text-slate-600 font-bold mb-2">Archivo Curatorial</p>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 border-t border-tm-purple/20">
+                                <span class="text-xs font-black text-tm-purple">$1.600 ARS</span>
+                                <button id="btn-fz-3" onclick="openFanzineCheckout('Selección de artículos de revista Ramona 2000\'s', 1600, 'btn-fz-3')" class="bg-tm-lime hover:bg-yellow-300 text-tm-purple w-9 h-9 rounded-full border-2 border-tm-purple font-black text-lg flex items-center justify-center shadow transition transform hover:scale-110">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fanzine 4 -->
+                        <div class="fanzine-card bg-pink-100 border-3 border-tm-purple rounded-2xl p-4 relative shadow-md flex flex-col justify-between">
+                            <div>
+                                <span class="bg-tm-pink text-tm-purple text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple block w-max mb-2">FANZINE 4</span>
+                                <h4 class="font-black text-xs text-tm-purple leading-tight mb-2">Poemas de amor</h4>
+                                <p class="text-[10px] text-slate-600 font-bold mb-2">Fran Pandolfo</p>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 border-t border-tm-purple/20">
+                                <span class="text-xs font-black text-tm-purple">$1.400 ARS</span>
+                                <button id="btn-fz-4" onclick="openFanzineCheckout('Poemas de amor', 1400, 'btn-fz-4')" class="bg-tm-lime hover:bg-yellow-300 text-tm-purple w-9 h-9 rounded-full border-2 border-tm-purple font-black text-lg flex items-center justify-center shadow transition transform hover:scale-110">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- MODAL CHECKOUT COMPRA FANZINE -->
+        <div id="fanzine-modal" class="fixed inset-0 bg-tm-purple/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white border-4 border-tm-purple rounded-3xl p-6 max-w-md w-full neon-shadow space-y-4 relative">
+                <button onclick="closeFanzineModal()" class="absolute top-3 right-3 text-tm-purple font-black text-lg hover:text-tm-pink-dark">✕</button>
+                
+                <span class="bg-tm-yellow text-tm-purple font-black text-[10px] px-2.5 py-0.5 rounded border border-tm-purple uppercase">
+                    Agregar Fanzine a la entrega
+                </span>
+
+                <h3 class="text-lg font-black text-tm-purple" id="modal-fanzine-title">Fanzine</h3>
+                <p class="text-xs font-bold text-tm-purple" id="modal-fanzine-price">Precio: $0 ARS</p>
+
+                <div class="space-y-3 bg-pink-50 p-3.5 rounded-xl border-2 border-tm-purple">
+                    <label class="block text-xs font-bold text-tm-purple uppercase">Medio de Pago del Adicional</label>
+                    <select id="modal-payment-option" class="w-full px-3 py-2 rounded-lg border-2 border-tm-purple text-xs font-bold bg-white">
+                        <option value="Transferencia">Transferencia / Efectivo en entrega</option>
+                        <option value="MercadoPago">Débito MercadoPago</option>
+                    </select>
+
+                    <div class="bg-tm-lime/50 border border-tm-purple p-2 rounded-lg text-xs font-bold text-tm-purple">
+                        ✦ El fanzine lo recibirás en tu próxima entrega de la revista Tropicalísima. Si elegís transferencia, podrás cancelarlo más tarde si cambiás de opinión.
+                    </div>
+                </div>
+
+                <button onclick="confirmFanzinePurchase()" class="w-full bg-tm-lime hover:bg-yellow-300 text-tm-purple font-black text-xs py-3 rounded-xl border-2 border-tm-purple shadow">
+                    CONFIRMAR Y SUMAR AL PAQUETE
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. VISTA "PANEL TM" (EQUIPO REPARTIDOR)    -->
+        <!-- ========================================== -->
+        <section id="team-view" class="hidden space-y-6">
+            
+            <div class="bg-tm-purple text-white border-4 border-tm-purple rounded-3xl p-5 neon-shadow flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <span class="bg-tm-pink text-tm-purple font-black text-[10px] px-2 py-0.5 rounded border border-tm-lime">PANEL EQUIPO</span>
+                    <h2 class="text-2xl font-black text-tm-lime mt-1">Gestión Colectiva de Entregas</h2>
+                    <p class="text-xs text-pink-200 font-bold">Grupo Tropical Mecánico: Camila (Quilmes), Fran (San Telmo), Zoé (Almagro) y Virginia (Palermo).</p>
+                </div>
+            </div>
+
+            <!-- Nodos de Trabajo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-white border-2 border-tm-purple p-3 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-xs text-tm-purple">Camila (Quilmes)</p>
+                        <p class="text-[11px] text-slate-500 font-bold" id="count-camila">0 pendientes</p>
+                    </div>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 border border-slate-800"></span>
+                </div>
+                <div class="bg-white border-2 border-tm-purple p-3 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-xs text-tm-purple">Fran (San Telmo)</p>
+                        <p class="text-[11px] text-slate-500 font-bold" id="count-fran">0 pendientes</p>
+                    </div>
+                    <span class="w-3 h-3 rounded-full bg-blue-500 border border-slate-800"></span>
+                </div>
+                <div class="bg-white border-2 border-tm-purple p-3 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-xs text-tm-purple">Zoé (Almagro)</p>
+                        <p class="text-[11px] text-slate-500 font-bold" id="count-zoe">0 pendientes</p>
+                    </div>
+                    <span class="w-3 h-3 rounded-full bg-purple-500 border border-slate-800"></span>
+                </div>
+                <div class="bg-white border-2 border-tm-purple p-3 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-xs text-tm-purple">Virginia (Palermo)</p>
+                        <p class="text-[11px] text-slate-500 font-bold" id="count-virginia">0 pendientes</p>
+                    </div>
+                    <span class="w-3 h-3 rounded-full bg-amber-500 border border-slate-800"></span>
+                </div>
+            </div>
+
+            <!-- MAPA GEOLOCALIZADO -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-8 bg-white border-4 border-tm-purple rounded-3xl p-4 neon-shadow space-y-2">
+                    <h3 class="font-black text-tm-purple text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-tm-pink-dark"></i> Mapa de Entregas y Puntos de Retiro
+                    </h3>
+                    
+                    <div id="map-container">
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-4 bg-white border-4 border-tm-purple rounded-3xl p-5 neon-shadow space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="bg-tm-yellow border-2 border-tm-purple p-3 rounded-xl">
+                            <h4 class="font-black text-tm-purple text-xs uppercase">Asignación Inteligente</h4>
+                            <p class="text-[11px] text-tm-purple mt-1 font-bold">
+                                Asigna automáticamente las entregas a la integrante más cercana.
+                            </p>
+                        </div>
+
+                        <button onclick="autoAssignClosest()" class="w-full bg-tm-lime hover:bg-yellow-300 text-tm-purple font-black text-xs py-3 rounded-xl border-2 border-tm-purple shadow transition">
+                            RE-ASIGNAR POR CERCANÍA GEOGRÁFICA
+                        </button>
+                    </div>
+
+                    <div class="border-t-2 border-slate-200 pt-2 text-[11px] font-bold space-y-1 text-slate-700">
+                        <span class="text-tm-purple block font-black">Referencias:</span>
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Envíos a Domicilio</div>
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Puntos de Retiro</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA ENTREGAS PENDIENTES -->
+            <div class="bg-white border-4 border-tm-purple rounded-3xl p-5 neon-shadow space-y-4">
+                <h3 class="font-black text-tm-purple text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-clock text-amber-600"></i> Entregas Pendientes / En Camino
+                </h3>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-tm-purple border-collapse">
+                        <thead>
+                            <tr class="bg-tm-pink-light border-b-2 border-tm-purple text-[11px] uppercase font-black">
+                                <th class="p-2.5">Suscriptor/a</th>
+                                <th class="p-2.5">Contacto</th>
+                                <th class="p-2.5">Tipo / Destino</th>
+                                <th class="p-2.5">Fanzines Extras</th>
+                                <th class="p-2.5">Repartidora</th>
+                                <th class="p-2.5">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscribers-table-body" class="divide-y divide-pink-200 font-bold">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TABLA ENTREGAS REALIZADAS -->
+            <div class="bg-gray-50 border-4 border-tm-purple rounded-3xl p-5 neon-shadow space-y-4 opacity-75">
+                <h3 class="font-black text-tm-purple text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-green-600"></i> Historial de Entregas Realizadas
+                </h3>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-tm-purple border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200 border-b-2 border-tm-purple text-[11px] uppercase font-black">
+                                <th class="p-2.5">Suscriptor/a</th>
+                                <th class="p-2.5">Destino</th>
+                                <th class="p-2.5">Fanzines Entregados</th>
+                                <th class="p-2.5">Entregado por</th>
+                                <th class="p-2.5">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completed-table-body" class="divide-y divide-gray-300 font-bold">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="fixed inset-0 bg-tm-purple/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-4 border-tm-purple rounded-3xl p-6 max-w-sm w-full neon-shadow space-y-4 text-center">
+            <div class="w-10 h-10 bg-tm-yellow border-2 border-tm-purple rounded-full flex items-center justify-center mx-auto text-lg font-black text-tm-purple">
+                ?
+            </div>
+            <h3 class="text-base font-black text-tm-purple">¿Estás segura?</h3>
+            <p class="text-xs text-slate-700 font-bold" id="confirm-modal-text">
+                Marcarás esta entrega como realizada.
+            </p>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="cancelDeliveryConfirmation()" class="w-1/2 bg-gray-200 text-tm-purple font-black text-xs py-2 rounded-xl border-2 border-tm-purple">
+                    CANCELAR
+                </button>
+                <button onclick="proceedDeliveryConfirmation()" class="w-1/2 bg-tm-lime text-tm-purple font-black text-xs py-2 rounded-xl border-2 border-tm-purple shadow">
+                    SÍ, ENTREGADO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        const TEAM_MEMBERS = [
+            { id: 'camila', name: 'Camila', zone: 'Quilmes', lat: -34.7205, lng: -58.2541 },
+            { id: 'fran', name: 'Fran', zone: 'San Telmo', lat: -34.6212, lng: -58.3731 },
+            { id: 'zoe', name: 'Zoé', zone: 'Almagro', lat: -34.6097, lng: -58.4234 },
+            { id: 'virginia', name: 'Virginia', zone: 'Palermo', lat: -34.5889, lng: -58.4099 }
+        ];
+
+        let subscribers = [
+            {
+                id: 1,
+                name: 'Mariana Rossi',
+                email: 'mariana@art.com',
+                phone: '11 4455-6677',
+                instagram: '@mariana_art',
+                type: 'domicilio',
+                address: 'Av. Corrientes 3800, Almagro',
+                lat: -34.6042,
+                lng: -58.4202,
+                assignedTo: 'zoe',
+                status: 'Pendiente',
+                addons: ['La teoría de la bolsa como origen de la ficción']
+            },
+            {
+                id: 2,
+                name: 'Gonzalo Pérez',
+                email: 'gonza.p@gmail.com',
+                phone: '11 3322-1100',
+                instagram: '',
+                type: 'domicilio',
+                address: 'Peatonal Rivadavia 250, Quilmes',
+                lat: -34.7220,
+                lng: -58.2560,
+                assignedTo: 'camila',
+                status: 'Pendiente',
+                addons: []
+            },
+            {
+                id: 3,
+                name: 'Clara Domínguez',
+                email: 'clara@design.com',
+                phone: '11 9988-7766',
+                instagram: '@clari_d',
+                type: 'retiro',
+                address: 'Galería Casa Brandon (Almagro)',
+                lat: -34.6015,
+                lng: -58.4150,
+                assignedTo: 'zoe',
+                status: 'Entregado',
+                addons: ['Poemas de amor']
+            }
+        ];
+
+        let currentActiveUser = {
+            name: 'Lucía Pineda',
+            email: 'lucia@ejemplo.com',
+            phone: '11 2345-6789',
+            instagram: '@lucia_pineda',
+            address: 'Av. Corrientes 2450, CABA',
+            type: 'domicilio',
+            addons: []
+        };
+
+        let map = null;
+        let mapMarkers = [];
+        let pendingConfirmSubId = null;
+        let selectedFanzineTemp = null;
+        let selectedBtnIdTemp = null;
+
+        const fanzinesMap = [
+            { title: "La teoría de la bolsa como origen de la ficción", btnId: "btn-fz-1" },
+            { title: "El tao del arte", btnId: "btn-fz-2" },
+            { title: "Selección de artículos de revista Ramona 2000's", btnId: "btn-fz-3" },
+            { title: "Poemas de amor", btnId: "btn-fz-4" }
+        ];
+
+        window.onload = function() {
+            renderTables();
+            updateStats();
+        };
+
+        function resetToHome() {
+            switchTab('subscribe-view');
+        }
+
+        function switchTab(viewId) {
+            const views = ['subscribe-view', 'profile-view', 'team-view'];
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById(viewId);
+            if (target) target.classList.remove('hidden');
+
+            const badge = document.getElementById('view-mode-badge');
+            const modeText = document.getElementById('view-mode-text');
+
+            if (viewId === 'team-view') {
+                badge.className = "inline-block w-2.5 h-2.5 rounded-full bg-tm-pink animate-ping";
+                modeText.innerText = "Panel Interno TM — Gestión Colectiva de Entregas";
+                
+                setTimeout(() => {
+                    if (!map) {
+                        initMap();
+                    } else {
+                        map.invalidateSize();
+                    }
+                }, 200);
+            } else if (viewId === 'profile-view') {
+                badge.className = "inline-block w-2.5 h-2.5 rounded-full bg-tm-yellow animate-pulse";
+                modeText.innerText = "Mi Suscripción — Estado de Entrega y Fanzines";
+            } else {
+                badge.className = "inline-block w-2.5 h-2.5 rounded-full bg-tm-lime animate-pulse";
+                modeText.innerText = "Revista Tropicalísima — Suscripción Mensual Autogestiva";
+            }
+        }
+
+        function goToStep1() {
+            document.getElementById('step-1-container').classList.remove('hidden');
+            document.getElementById('step-2-container').classList.add('hidden');
+        }
+
+        function goToStep2() {
+            document.getElementById('step-1-container').classList.add('hidden');
+            document.getElementById('step-2-container').classList.remove('hidden');
+        }
+
+        function toggleDeliveryMode(val) {
+            const addrContainer = document.getElementById('address-field-container');
+            const pickupContainer = document.getElementById('pickup-field-container');
+            const addrInput = document.getElementById('sub-address');
+
+            if (val === 'domicilio') {
+                addrContainer.classList.remove('hidden');
+                pickupContainer.classList.add('hidden');
+                addrInput.required = true;
+            } else {
+                addrContainer.classList.add('hidden');
+                pickupContainer.classList.remove('hidden');
+                addrInput.required = false;
+            }
+        }
+
+        function handleSubscribeSubmit(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('sub-name').value;
+            const email = document.getElementById('sub-email').value;
+            const phone = document.getElementById('sub-phone').value;
+            const instagram = document.getElementById('sub-instagram').value;
+            
+            const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked').value;
+            let addressText = deliveryOption === 'domicilio' ? document.getElementById('sub-address').value : document.getElementById('sub-pickup-point').value;
+
+            currentActiveUser = {
+                name: name,
+                email: email,
+                phone: phone,
+                instagram: instagram,
+                address: addressText,
+                type: deliveryOption,
+                addons: []
+            };
+
+            const newSub = {
+                id: subscribers.length + 1,
+                name: name,
+                email: email,
+                phone: phone,
+                instagram: instagram,
+                type: deliveryOption,
+                address: addressText,
+                lat: -34.6000 + (Math.random() - 0.5) * 0.08,
+                lng: -58.4000 + (Math.random() - 0.5) * 0.08,
+                assignedTo: 'zoe',
+                status: 'Pendiente',
+                addons: []
+            };
+
+            subscribers.unshift(newSub);
+
+            document.getElementById('profile-user-name').innerText = `Hola, ${name}`;
+            document.getElementById('profile-address-display').innerText = `Dirección de entrega: ${addressText}`;
+
+            renderTables();
+            updateStats();
+            switchTab('profile-view');
+        }
+
+        // FANZINES CHECKOUT Y ESTADO CON CANCELACIÓN
+        function openFanzineCheckout(title, price, btnId) {
+            selectedFanzineTemp = title;
+            selectedBtnIdTemp = btnId;
+            document.getElementById('modal-fanzine-title').innerText = title;
+            document.getElementById('modal-fanzine-price').innerText = `Precio: $${price} ARS`;
+            document.getElementById('fanzine-modal').classList.remove('hidden');
+        }
+
+        function closeFanzineModal() {
+            document.getElementById('fanzine-modal').classList.add('hidden');
+        }
+
+        function confirmFanzinePurchase() {
+            if (selectedFanzineTemp && currentActiveUser) {
+                if (!currentActiveUser.addons.includes(selectedFanzineTemp)) {
+                    currentActiveUser.addons.push(selectedFanzineTemp);
+                }
+
+                // Cambiar botón a TIC ✔
+                if (selectedBtnIdTemp) {
+                    const btn = document.getElementById(selectedBtnIdTemp);
+                    if (btn) {
+                        btn.className = "bg-green-500 text-white w-9 h-9 rounded-full border-2 border-tm-purple font-black text-sm flex items-center justify-center shadow";
+                        btn.innerHTML = "✔";
+                        btn.disabled = true;
+                    }
+                }
+
+                // Sincronizar en lista general
+                const matchSub = subscribers.find(s => s.name === currentActiveUser.name);
+                if (matchSub) {
+                    matchSub.addons = currentActiveUser.addons;
+                }
+
+                updateProfileIncludedList();
+                closeFanzineModal();
+                renderTables();
+            }
+        }
+
+        // CANCELAR Y QUITAR FANZINE ADICIONAL
+        function removeFanzineAddon(title) {
+            currentActiveUser.addons = currentActiveUser.addons.filter(item => item !== title);
+
+            // Restaurar botón en la galería a +
+            const target = fanzinesMap.find(f => f.title === title);
+            if (target) {
+                const btn = document.getElementById(target.btnId);
+                if (btn) {
+                    btn.className = "bg-tm-lime hover:bg-yellow-300 text-tm-purple w-9 h-9 rounded-full border-2 border-tm-purple font-black text-lg flex items-center justify-center shadow transition transform hover:scale-110";
+                    btn.innerHTML = "+";
+                    btn.disabled = false;
+                }
+            }
+
+            // Sincronizar en lista general
+            const matchSub = subscribers.find(s => s.name === currentActiveUser.name);
+            if (matchSub) {
+                matchSub.addons = currentActiveUser.addons;
+            }
+
+            updateProfileIncludedList();
+            renderTables();
+        }
+
+        function updateProfileIncludedList() {
+            const listEl = document.getElementById('included-items-list');
+            listEl.innerHTML = `
+                <div class="flex items-center gap-1.5 text-tm-purple">
+                    <i class="fa-solid fa-check text-xs text-green-600"></i>
+                    <span>Revista Tropicalísima (Edición Impresa Octubre)</span>
+                </div>
+            `;
+            
+            currentActiveUser.addons.forEach(addon => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-pink-100 p-2 rounded-lg border border-tm-purple/30 text-xs mt-1";
+                div.innerHTML = `
+                    <div class="flex items-center gap-1.5 text-tm-pink-dark font-black">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>${addon}</span>
+                    </div>
+                    <button onclick="removeFanzineAddon('${addon.replace(/'/g, "\\'")}')" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-tm-purple shadow">
+                        Cancelar / Quitar
+                    </button>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        // MAPA LEAFLET
+        function initMap() {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+
+            map = L.map('map').setView([-34.6200, -58.3800], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; Tropical Mecánico'
+            }).addTo(map);
+
+            TEAM_MEMBERS.forEach(m => {
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color:#ccff00; border:2px solid #4a0e4e; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px; color:#4a0e4e;">🌸</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                L.marker([m.lat, m.lng], { icon: icon }).addTo(map)
+                    .bindPopup(`<b>${m.name}</b> (${m.zone})`);
+            });
+
+            updateMapMarkers();
+        }
+
+        function updateMapMarkers() {
+            if (!map) return;
+
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapMarkers = [];
+
+            subscribers.filter(s => s.status === 'Pendiente').forEach(sub => {
+                const isRetiro = sub.type === 'retiro';
+                const icon = L.divIcon({
+                    className: 'custom-sub-icon',
+                    html: `<div style="background-color:${isRetiro ? '#c084fc' : '#60a5fa'}; border:2px solid #4a0e4e; border-radius:6px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;">📍</div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+
+                const marker = L.marker([sub.lat, sub.lng], { icon: icon })
+                    .addTo(map)
+                    .bindPopup(`<b>${sub.name}</b><br>${sub.address}`);
+
+                mapMarkers.push(marker);
+            });
+        }
+
+        // TABLAS DEL PANEL INTERNO
+        function renderTables() {
+            const pendingBody = document.getElementById('subscribers-table-body');
+            const completedBody = document.getElementById('completed-table-body');
+
+            pendingBody.innerHTML = '';
+            completedBody.innerHTML = '';
+
+            subscribers.forEach(sub => {
+                const memberOptions = TEAM_MEMBERS.map(m => `
+                    <option value="${m.id}" ${sub.assignedTo === m.id ? 'selected' : ''}>${m.name} (${m.zone})</option>
+                `).join('');
+
+                const hasAddons = sub.addons && sub.addons.length > 0;
+                const contactDisplay = `${sub.email}<br><span class="text-slate-500">${sub.phone}</span>${sub.instagram ? `<br><span class="text-tm-pink-dark">${sub.instagram}</span>` : ''}`;
+
+                if (sub.status === 'Pendiente') {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-pink-100 transition";
+                    tr.innerHTML = `
+                        <td class="p-2.5 font-bold">${sub.name}</td>
+                        <td class="p-2.5 text-[10px]">${contactDisplay}</td>
+                        <td class="p-2.5 text-[11px]">
+                            <span class="font-bold block">${sub.type === 'domicilio' ? '🏠 Domicilio' : '📦 Punto Retiro'}</span>
+                            <span class="text-slate-600">${sub.address}</span>
+                        </td>
+                        <td class="p-2.5">
+                            ${hasAddons ? `<span class="bg-tm-yellow text-tm-purple text-[10px] font-black px-1.5 py-0.5 rounded border border-tm-purple block">${sub.addons.join('<br>')}</span>` : `<span class="text-[10px] text-slate-400">Solo revista</span>`}
+                        </td>
+                        <td class="p-2.5">
+                            <select onchange="reassignMember(${sub.id}, this.value)" class="text-[11px] font-bold border border-tm-purple rounded px-1.5 py-1 bg-white">
+                                ${memberOptions}
+                            </select>
+                        </td>
+                        <td class="p-2.5">
+                            <button onclick="promptConfirmDelivery(${sub.id})" class="bg-tm-lime hover:bg-yellow-300 text-tm-purple border-2 border-tm-purple px-2 py-1 rounded text-[11px] font-black transition">
+                                MARCAR ENTREGADO
+                            </button>
+                        </td>
+                    `;
+                    pendingBody.appendChild(tr);
+                } else {
+                    const tr = document.createElement('tr');
+                    tr.className = "bg-gray-100/60";
+                    const assignedMember = TEAM_MEMBERS.find(m => m.id === sub.assignedTo);
+                    
+                    tr.innerHTML = `
+                        <td class="p-2.5 font-bold text-gray-700">${sub.name}</td>
+                        <td class="p-2.5 text-[11px] text-gray-600">${sub.address}</td>
+                        <td class="p-2.5 text-[11px] text-gray-600">${hasAddons ? sub.addons.join(', ') : 'Solo revista'}</td>
+                        <td class="p-2.5 text-[11px] font-bold text-gray-700">${assignedMember ? assignedMember.name : 'TM'}</td>
+                        <td class="p-2.5">
+                            <span class="bg-green-200 text-green-900 border border-green-600 text-[10px] font-black px-2 py-0.5 rounded">
+                                ENTREGADO
+                            </span>
+                        </td>
+                    `;
+                    completedBody.appendChild(tr);
+                }
+            });
+        }
+
+        // CONFIRMACIÓN DE ENTREGAS
+        function promptConfirmDelivery(subId) {
+            const sub = subscribers.find(s => s.id === subId);
+            if (!sub) return;
+
+            pendingConfirmSubId = subId;
+            const textEl = document.getElementById('confirm-modal-text');
+
+            if (sub.type === 'retiro') {
+                textEl.innerHTML = `Marcarás la entrega en <strong class="text-tm-purple">${sub.address}</strong> (Punto de Retiro) de <span class="text-tm-pink-dark font-black">${sub.name}</span> como <strong class="text-green-700">ENTREGADA</strong>.`;
+            } else {
+                textEl.innerHTML = `Marcarás la entrega en domicilio de <span class="text-tm-pink-dark font-black">${sub.name}</span> como <strong class="text-green-700">ENTREGADA</strong>.`;
+            }
+
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function cancelDeliveryConfirmation() {
+            pendingConfirmSubId = null;
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        function proceedDeliveryConfirmation() {
+            if (pendingConfirmSubId) {
+                const sub = subscribers.find(s => s.id === pendingConfirmSubId);
+                if (sub) {
+                    sub.status = 'Entregado';
+                    renderTables();
+                    updateStats();
+                    if (map) updateMapMarkers();
+                }
+            }
+            cancelDeliveryConfirmation();
+        }
+
+        function reassignMember(subId, memberId) {
+            const sub = subscribers.find(s => s.id === subId);
+            if (sub) {
+                sub.assignedTo = memberId;
+                updateStats();
+            }
+        }
+
+        function getClosestMemberId(lat, lng) {
+            let minDistance = Infinity;
+            let closestId = TEAM_MEMBERS[0].id;
+
+            TEAM_MEMBERS.forEach(m => {
+                const dist = Math.sqrt(Math.pow(m.lat - lat, 2) + Math.pow(m.lng - lng, 2));
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestId = m.id;
+                }
+            });
+            return closestId;
+        }
+
+        function autoAssignClosest() {
+            subscribers.forEach(sub => {
+                sub.assignedTo = getClosestMemberId(sub.lat, sub.lng);
+            });
+            renderTables();
+            updateStats();
+        }
+
+        function updateStats() {
+            TEAM_MEMBERS.forEach(m => {
+                const count = subscribers.filter(s => s.assignedTo === m.id && s.status === 'Pendiente').length;
+                const el = document.getElementById(`count-${m.id}`);
+                if (el) el.innerText = `${count} pendientes`;
+            });
+        }
+    </script>
+</body>
+</html>
