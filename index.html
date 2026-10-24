@@ -35,6 +35,19 @@
         * {
             font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif !important;
         }
+        /* Evita que la tipografía global de la página rompa los iconos Font Awesome. */
+        .fa-solid, .fas {
+            font-family: 'Font Awesome 6 Free' !important;
+            font-weight: 900 !important;
+        }
+        .fa-regular, .far {
+            font-family: 'Font Awesome 6 Free' !important;
+            font-weight: 400 !important;
+        }
+        .fa-brands, .fab {
+            font-family: 'Font Awesome 6 Brands' !important;
+            font-weight: 400 !important;
+        }
         body {
             background-color: #ffb6c1;
         }
@@ -889,7 +902,7 @@
             TEAM_MEMBERS.forEach(m => {
                 const icon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div style="background-color:#ccff00; border:2px solid #4a0e4e; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px; color:#4a0e4e;">🌸</div>`,
+                    html: `<div style="background-color:#ccff00; border:2px solid #4a0e4e; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:13px; color:#4a0e4e;"><i class="fa-solid fa-spa"></i></div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12]
                 });
@@ -911,7 +924,7 @@
                 const isRetiro = sub.type === 'retiro';
                 const icon = L.divIcon({
                     className: 'custom-sub-icon',
-                    html: `<div style="background-color:${isRetiro ? '#c084fc' : '#60a5fa'}; border:2px solid #4a0e4e; border-radius:6px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;">📍</div>`,
+                    html: `<div style="background-color:${isRetiro ? '#c084fc' : '#60a5fa'}; border:2px solid #4a0e4e; border-radius:6px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:#4a0e4e;"><i class="fa-solid fa-location-dot"></i></div>`,
                     iconSize: [20, 20],
                     iconAnchor: [10, 10]
                 });
@@ -947,7 +960,7 @@
                         <td class="p-2.5 font-bold">${sub.name}</td>
                         <td class="p-2.5 text-[10px]">${contactDisplay}</td>
                         <td class="p-2.5 text-[11px]">
-                            <span class="font-bold block">${sub.type === 'domicilio' ? '🏠 Domicilio' : '📦 Punto Retiro'}</span>
+                            <span class="font-bold block">${sub.type === 'domicilio' ? '<i class="fa-solid fa-house mr-1"></i> Domicilio' : '<i class="fa-solid fa-box mr-1"></i> Punto Retiro'}</span>
                             <span class="text-slate-600">${sub.address}</span>
                         </td>
                         <td class="p-2.5">
